@@ -144,7 +144,7 @@ public class Swerve extends SubsystemBase {
 
         builder.addDoubleProperty(
           String.format("Cancoder %d", module.moduleNumber),
-          () -> module.getCanCoder(),
+          () -> module.getSwerveAngle(),
           null);
 
           
