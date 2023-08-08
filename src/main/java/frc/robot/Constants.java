@@ -52,7 +52,7 @@ public class Constants {
     public static final double DRIVE_GEAR_RATIO = 6.75 / 1.0; // 6.75:1
     public static final double DRIVE_ROTATIONS_TO_METERS = WHEEL_CIRCUMFERENCE / DRIVE_GEAR_RATIO;
     public static final double DRIVE_RPM_TO_METERS_PER_SECOND = DRIVE_ROTATIONS_TO_METERS / 60.0;
-    public static final double ANGLE_GEAR_RATIO = 12.8 / 1.0; // 12.8:1
+    public static final double ANGLE_GEAR_RATIO = (150/7) / 1.0; // THEY HAD IT AT 12.8:1 -- not sure why
     public static final double ANGLE_ROTATIONS_TO_RADIANS = (Math.PI * 2) / ANGLE_GEAR_RATIO;
     public static final double ANGLE_RPM_TO_RADIANS_PER_SECOND = DRIVE_ROTATIONS_TO_METERS / 60.0;
 
@@ -94,7 +94,7 @@ public class Constants {
     public static final IdleMode DRIVE_IDLE_MODE = IdleMode.kBrake;
     public static final IdleMode ANGLE_IDLE_MODE = IdleMode.kCoast;
 
-    /** 
+    /** //NOTE FROM PERVIOUS WRITERS WHO USED CAN CODERS
      * Module specific constants.
      * CanCoder offset is in DEGREES, not radians like the rest of the repo.
      * This is to make offset slightly more accurate and easier to measure.
