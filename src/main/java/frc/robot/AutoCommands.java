@@ -26,8 +26,8 @@ public class AutoCommands {
     this.swerve = swerve;
 
     dropDown = new SendableChooser<>();
-    dropDown.addOption("Example", run(() -> {
-      getCommand("Test", true);
+    dropDown.addOption("A 2x2m square auto", run(() -> {
+      getCommand("2x2m_Square", true);
     }));
 
     SmartDashboard.putData("Auto Selection", dropDown);
