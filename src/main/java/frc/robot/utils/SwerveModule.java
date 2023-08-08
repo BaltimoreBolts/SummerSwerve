@@ -1,17 +1,17 @@
 package frc.robot.utils;
 
-import com.ctre.phoenix.sensors.AbsoluteSensorRange;
+//import com.ctre.phoenix.sensors.AbsoluteSensorRange;
 //import com.ctre.phoenix.sensors.CANCoder;
 //import com.ctre.phoenix.sensors.CANCoderConfiguration;
-import com.ctre.phoenix.sensors.SensorInitializationStrategy;
-import com.ctre.phoenix.sensors.SensorTimeBase;
+//import com.ctre.phoenix.sensors.SensorInitializationStrategy;
+//import com.ctre.phoenix.sensors.SensorTimeBase;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
-import edu.wpi.first.wpilibj.AnalogPotentiometer; // FOR ANALOG ENCODER
-import edu.wpi.first.wpilibj.AnalogEncoder;
+//import edu.wpi.first.wpilibj.AnalogPotentiometer; // FOR ANALOG ENCODER (Maybe)
+import edu.wpi.first.wpilibj.AnalogEncoder; // FOR ANALOG ENCODER
 
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -34,6 +34,7 @@ public class SwerveModule {
   private final SparkMaxPIDController anglePID;
   
   private final AnalogEncoder m_turningEncoder; // FOR ANALOG ENCODER
+  private final double thriftyOffsetDegrees;
   
   //private final CANCoder canCoder;
   //private final double canCoderOffsetDegrees;
@@ -53,7 +54,8 @@ public class SwerveModule {
     angleEncoder = angleMotor.getEncoder();
     anglePID = angleMotor.getPIDController();
 
-    m_turningEncoder = new AnalogEncoder(thriftyEncoderID, 2.0 * Math.PI, angularOffset);
+    m_turningEncoder = new AnalogEncoder(constants.thriftyEncoderID);
+    thriftyOffsetDegrees = constants.thriftyOffsetDegrees;
     
     //canCoder = new CANCoder(constants.canCoderID);
     //canCoderOffsetDegrees = constants.canCoderOffsetDegrees;
@@ -144,7 +146,7 @@ public class SwerveModule {
 
     angleEncoder.setPositionConversionFactor(Constants.kSwerve.ANGLE_ROTATIONS_TO_RADIANS);
     angleEncoder.setVelocityConversionFactor(Constants.kSwerve.ANGLE_RPM_TO_RADIANS_PER_SECOND);
-    angleEncoder.setPosition(Units.degreesToRadians(getSwerveAngle() - canCoderOffsetDegrees));
+    angleEncoder.setPosition(Units.degreesToRadians(getSwerveAngle() - thriftyOffsetDegrees));
 
     // CanCoder configuration.
     //CANCoderConfiguration canCoderConfiguration = new CANCoderConfiguration();
