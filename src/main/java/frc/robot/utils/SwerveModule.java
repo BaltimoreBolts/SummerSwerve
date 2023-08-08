@@ -98,7 +98,7 @@ public class SwerveModule {
 
 
   public double getSwerveAngle() {
-    return m_turningEncoder.getAbsolutePosition();
+    return (m_turningEncoder.getAbsolutePosition()* 2.0 * Math.PI); // should be outputing # between 0-1*2pi
   }
 
   public Rotation2d getAngle() {
