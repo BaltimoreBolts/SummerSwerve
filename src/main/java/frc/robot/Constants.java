@@ -76,9 +76,9 @@ public class Constants {
     public static final double DRIVE_KA = 0.46034;
 
     /** Angle motor PID values. */
-    public static final double ANGLE_KP = 1.5;
+    public static final double ANGLE_KP = 0.25;
     public static final double ANGLE_KI = 0.0;
-    public static final double ANGLE_KD = 0.1;
+    public static final double ANGLE_KD = 0.0;
     public static final double ANGLE_KF = 0.0;
     
     /** Swerve constraints. */
@@ -100,10 +100,10 @@ public class Constants {
      * This is to make offset slightly more accurate and easier to measure.
      */
     public static final SwerveModuleConstants MOD_0_Constants = new SwerveModuleConstants(
-      1,
-      2,
-      3,
-      203.115234
+      7,
+      6,
+      0,
+      0.0
     );
 
     public static final SwerveModuleConstants MOD_1_Constants = new SwerveModuleConstants(
