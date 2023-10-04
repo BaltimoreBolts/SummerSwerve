@@ -9,10 +9,11 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 
 //import edu.wpi.first.wpilibj.AnalogPotentiometer; // FOR ANALOG ENCODER (Maybe)
 import edu.wpi.first.wpilibj.AnalogEncoder; // FOR ANALOG ENCODER
-
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -35,6 +36,8 @@ public class SwerveModule {
   
   private final AnalogEncoder m_turningEncoder; // FOR ANALOG ENCODER
   private final double thriftyOffsetDegrees;
+  
+  private static final double k_turnGearRatio = 7.0/150.0;
   
   //private final CANCoder canCoder;
   //private final double canCoderOffsetDegrees;
@@ -90,15 +93,13 @@ public class SwerveModule {
     return new SwerveModuleState(velocity, rot);
   }
 
-  /*
-  public double getCanCoder() {
-    return canCoder.getAbsolutePosition();
-  }
-  */
-
-
   public double getSwerveAngle() {
-    return (m_turningEncoder.getAbsolutePosition()* 2.0 * Math.PI); // should be outputing # between 0-1*2pi
+    // return (m_turningEncoder.getAbsolutePosition()* 2.0 * Math.PI); // should be outputing # between 0-1*2pi
+    return (angleMotor.getEncoder().getPosition() * k_turnGearRatio);
+  }
+
+  private double getThriftyAngle() {
+    return m_turningEncoder.getAbsolutePosition()*360;
   }
 
   public Rotation2d getAngle() {
@@ -147,15 +148,9 @@ public class SwerveModule {
     angleEncoder.setPositionConversionFactor(Constants.kSwerve.ANGLE_ROTATIONS_TO_RADIANS);
     angleEncoder.setVelocityConversionFactor(Constants.kSwerve.ANGLE_RPM_TO_RADIANS_PER_SECOND);
     angleEncoder.setPosition(Units.degreesToRadians(getSwerveAngle() - thriftyOffsetDegrees));
+  }
 
-    // CanCoder configuration.
-    //CANCoderConfiguration canCoderConfiguration = new CANCoderConfiguration();
-    //canCoderConfiguration.absoluteSensorRange = AbsoluteSensorRange.Unsigned_0_to_360;
-    //canCoderConfiguration.sensorDirection = Constants.kSwerve.CANCODER_INVERSION;
-    //canCoderConfiguration.initializationStrategy = SensorInitializationStrategy.BootToAbsolutePosition;
-    //anCoderConfiguration.sensorTimeBase = SensorTimeBase.PerSecond;
-    
-    //canCoder.configFactoryDefault();
-    //canCoder.configAllSettings(canCoderConfiguration);
+  public void update() {
+    SmartDashboard.putNumber("Thrifty Encoder", m_turningEncoder.getAbsolutePosition()*360);
   }
 }
