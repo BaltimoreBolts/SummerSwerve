@@ -13,6 +13,7 @@ import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 
 //import edu.wpi.first.wpilibj.AnalogPotentiometer; // FOR ANALOG ENCODER (Maybe)
 import edu.wpi.first.wpilibj.AnalogEncoder; // FOR ANALOG ENCODER
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -35,7 +36,9 @@ public class SwerveModule {
   private final SparkMaxPIDController anglePID;
   
   private final AnalogEncoder m_turningEncoder; // FOR ANALOG ENCODER
-  private final double thriftyOffsetDegrees;
+  private final double m_thriftyOffsetDegrees;
+
+  private double m_startupOffset; // TODO move later
   
   private static final double k_turnGearRatio = 7.0/150.0;
   
@@ -58,7 +61,7 @@ public class SwerveModule {
     anglePID = angleMotor.getPIDController();
 
     m_turningEncoder = new AnalogEncoder(constants.thriftyEncoderID);
-    thriftyOffsetDegrees = constants.thriftyOffsetDegrees;
+    m_thriftyOffsetDegrees = constants.thriftyOffsetDegrees;
     
     //canCoder = new CANCoder(constants.canCoderID);
     //canCoderOffsetDegrees = constants.canCoderOffsetDegrees;
@@ -95,11 +98,16 @@ public class SwerveModule {
 
   public double getSwerveAngle() {
     // return (m_turningEncoder.getAbsolutePosition()* 2.0 * Math.PI); // should be outputing # between 0-1*2pi
-    return (angleMotor.getEncoder().getPosition() * k_turnGearRatio);
+    return ((Units.rotationsToRadians(angleMotor.getEncoder().getPosition()) * k_turnGearRatio) + m_startupOffset);
+  }
+
+  public double getSwerveRawAngle() {
+    // return (m_turningEncoder.getAbsolutePosition()* 2.0 * Math.PI); // should be outputing # between 0-1*2pi
+    return (Units.rotationsToRadians(angleMotor.getEncoder().getPosition()) * k_turnGearRatio);
   }
 
   private double getThriftyAngle() {
-    return m_turningEncoder.getAbsolutePosition()*360;
+    return Units.rotationsToRadians(m_turningEncoder.getAbsolutePosition());
   }
 
   public Rotation2d getAngle() {
@@ -145,12 +153,29 @@ public class SwerveModule {
     anglePID.setPositionPIDWrappingMaxInput(2 * Math.PI);
     anglePID.setPositionPIDWrappingMinInput(0);
 
-    angleEncoder.setPositionConversionFactor(Constants.kSwerve.ANGLE_ROTATIONS_TO_RADIANS);
-    angleEncoder.setVelocityConversionFactor(Constants.kSwerve.ANGLE_RPM_TO_RADIANS_PER_SECOND);
-    angleEncoder.setPosition(Units.degreesToRadians(getSwerveAngle() - thriftyOffsetDegrees));
+    angleEncoder.setPositionConversionFactor(1.0);
+    angleEncoder.setVelocityConversionFactor(1.0);
+    //angleEncoder.setPosition(getThriftyAngle() - Units.degreesToRadians(m_thriftyOffsetDegrees));
+    configureEncoders();
+  }
+
+  public void configureEncoders() {
+    System.out.println("Start");
+    System.out.println(getThriftyAngle());
+    System.out.println(m_thriftyOffsetDegrees);
+    System.out.println(Units.degreesToRadians(m_thriftyOffsetDegrees));
+    System.out.println(getThriftyAngle() - Units.degreesToRadians(m_thriftyOffsetDegrees));
+    System.out.println(getSwerveRawAngle());
+    // angleEncoder.setPosition(Units.radiansToRotations(getThriftyAngle() - Units.degreesToRadians(m_thriftyOffsetDegrees)));
+    m_startupOffset = (getThriftyAngle() - Units.degreesToRadians(m_thriftyOffsetDegrees)) - getSwerveRawAngle();
   }
 
   public void update() {
-    SmartDashboard.putNumber("Thrifty Encoder", m_turningEncoder.getAbsolutePosition()*360);
+    SmartDashboard.putNumber("Thrifty Encoder", Units.radiansToDegrees(getThriftyAngle()));
+    SmartDashboard.putNumber("Steer Spark Encoder",  Units.radiansToDegrees(getSwerveAngle()));
+    if (RobotController.getUserButton()) {
+      configureEncoders();
+    }
+    
   }
 }
