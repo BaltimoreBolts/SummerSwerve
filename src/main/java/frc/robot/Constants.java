@@ -87,7 +87,7 @@ public class Constants {
 
     /** Inversions. */
     public static final boolean DRIVE_MOTOR_INVERSION = true;
-    public static final boolean ANGLE_MOTOR_INVERSION = false;
+    public static final boolean ANGLE_MOTOR_INVERSION = true;
     public static final boolean CANCODER_INVERSION = false;
 
     /** Idle modes. */
@@ -103,7 +103,7 @@ public class Constants {
       7,
       6,
       0,
-      0.0
+      225.4
     );
 
     public static final SwerveModuleConstants MOD_1_Constants = new SwerveModuleConstants(
