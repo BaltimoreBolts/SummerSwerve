@@ -1,5 +1,7 @@
 package frc.robot.utils;
 
+import org.growingstems.measurements.Angle;
+
 //import com.ctre.phoenix.sensors.AbsoluteSensorRange;
 //import com.ctre.phoenix.sensors.CANCoder;
 //import com.ctre.phoenix.sensors.CANCoderConfiguration;
@@ -39,7 +41,7 @@ public class SwerveModule {
   private final AnalogEncoder m_turningEncoder; // FOR ANALOG ENCODER
   private final double m_thriftyOffsetDegrees;
 
-  private double m_startupOffset; // TODO move later
+  private Angle m_startupOffset = Angle.ZERO; // TODO move later
   
   private static final double k_turnGearRatio = 7.0/150.0;
   
@@ -97,14 +99,12 @@ public class SwerveModule {
     return new SwerveModuleState(velocity, rot);
   }
 
-  public double getSwerveAngle() {
-    // return (m_turningEncoder.getAbsolutePosition()* 2.0 * Math.PI); // should be outputing # between 0-1*2pi
-    return ((Units.rotationsToRadians(angleMotor.getEncoder().getPosition()) * k_turnGearRatio) + m_startupOffset);
+  public Angle getSwerveAngle() {
+    return getSwerveRawAngle().add(m_startupOffset);
   }
 
-  public double getSwerveRawAngle() {
-    // return (m_turningEncoder.getAbsolutePosition()* 2.0 * Math.PI); // should be outputing # between 0-1*2pi
-    return (Units.rotationsToRadians(angleMotor.getEncoder().getPosition()) * k_turnGearRatio);
+  public Angle getSwerveRawAngle() {
+    return Angle.rotations(angleMotor.getEncoder().getPosition()).mul(k_turnGearRatio);
   }
 
   private double getThriftyAngle() {
@@ -168,12 +168,12 @@ public class SwerveModule {
     System.out.println(getThriftyAngle() - Units.degreesToRadians(m_thriftyOffsetDegrees));
     System.out.println(getSwerveRawAngle());
     // angleEncoder.setPosition(Units.radiansToRotations(getThriftyAngle() - Units.degreesToRadians(m_thriftyOffsetDegrees)));
-    m_startupOffset = (getThriftyAngle() - Units.degreesToRadians(m_thriftyOffsetDegrees)) - getSwerveRawAngle();
+    m_startupOffset = Angle.radians((getThriftyAngle() - Units.degreesToRadians(m_thriftyOffsetDegrees)) - getSwerveRawAngle().asRadians());
   }
 
   public void update() {
     SmartDashboard.putNumber("Thrifty Encoder", Units.radiansToDegrees(getThriftyAngle()));
-    SmartDashboard.putNumber("Steer Spark Encoder",  Units.radiansToDegrees(getSwerveAngle()));
+    SmartDashboard.putNumber("Steer Spark Encoder",  Units.radiansToDegrees(getSwerveAngle().asRadians()));
     if (RobotController.getUserButton()) {
       configureEncoders();
     }
@@ -181,7 +181,7 @@ public class SwerveModule {
   }
 
   public void setAngle(double angle_rad) {
-    double position = Units.radiansToRotations((angle_rad - m_startupOffset) / k_turnGearRatio);
+    double position = Units.radiansToRotations((angle_rad - m_startupOffset.asRadians()) / k_turnGearRatio);
     SmartDashboard.putNumber("position given", position);
     SmartDashboard.putNumber("position given 2", angle_rad);
     anglePID.setReference(position, ControlType.kPosition);
