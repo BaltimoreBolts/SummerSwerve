@@ -4,9 +4,14 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -16,6 +21,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
  */
 public class Robot extends TimedRobot {
   private RobotContainer robotContainer;
+  private Joystick m_joystick = new Joystick(0);
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -40,6 +46,13 @@ public class Robot extends TimedRobot {
     // and running subsystem periodic() methods.  This must be called from the robot's periodic
     // block in order for anything in the Command-based framework to work.
     CommandScheduler.getInstance().run();
+
+    double slider = Units.degreesToRadians(SmartDashboard.getNumber("Angle", 0.0));
+    if (m_joystick.getRawButton(2)) {
+      robotContainer.m_module.setAngle(slider);
+    } else {
+      robotContainer.m_module.stop();
+    }
 
     robotContainer.m_module.update();
   }
@@ -68,7 +81,10 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when teleop is enabled. */
   @Override
-  public void teleopInit() {}
+  public void teleopInit() {
+    SmartDashboard.putNumber("Angle", 0.0);
+    System.out.println("The angle is put");
+  }
 
   /** This function is called periodically during operator control. */
   @Override
