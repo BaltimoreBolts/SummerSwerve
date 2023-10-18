@@ -8,6 +8,7 @@ package frc.robot.utils;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 
@@ -150,8 +151,8 @@ public class SwerveModule {
     anglePID.setFF(Constants.kSwerve.ANGLE_KF);
 
     anglePID.setPositionPIDWrappingEnabled(true);
-    anglePID.setPositionPIDWrappingMaxInput(2 * Math.PI);
-    anglePID.setPositionPIDWrappingMinInput(0);
+    anglePID.setPositionPIDWrappingMaxInput(1.0 / k_turnGearRatio);
+    anglePID.setPositionPIDWrappingMinInput(0.0);
 
     angleEncoder.setPositionConversionFactor(1.0);
     angleEncoder.setVelocityConversionFactor(1.0);
@@ -178,4 +179,17 @@ public class SwerveModule {
     }
     
   }
+
+  public void setAngle(double angle_rad) {
+    double position = Units.radiansToRotations((angle_rad - m_startupOffset) / k_turnGearRatio);
+    SmartDashboard.putNumber("position given", position);
+    SmartDashboard.putNumber("position given 2", angle_rad);
+    anglePID.setReference(position, ControlType.kPosition);
+  }
+
+  public void stop() {
+    angleMotor.set(0);
+  }
+
+
 }
