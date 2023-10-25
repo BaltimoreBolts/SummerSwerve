@@ -156,7 +156,6 @@ public class SwerveModule {
 
   public void stop() {
     angleMotor.set(0);
+    driveMotor.set(0);
   }
-
-
 }

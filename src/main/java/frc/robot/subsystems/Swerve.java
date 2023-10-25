@@ -13,6 +13,8 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.utils.SwerveModule;
@@ -46,7 +48,7 @@ public class Swerve extends SubsystemBase {
    * Double suppliers are just any function that returns a double.
    */
   public Command drive(DoubleSupplier forwardBackAxis, DoubleSupplier leftRightAxis, DoubleSupplier rotationAxis, boolean isFieldRelative) {
-    return run(() -> {
+    return new RunCommand(() -> {
       // Grabbing input from suppliers.
       double forwardBack = forwardBackAxis.getAsDouble();
       double leftRight = leftRightAxis.getAsDouble();
@@ -70,7 +72,7 @@ public class Swerve extends SubsystemBase {
       SwerveModuleState[] states = Constants.kSwerve.KINEMATICS.toSwerveModuleStates(chassisSpeeds);
 
       setModuleStates(states);
-    }).withName("SwerveDriveCommand");
+    }, this).withName("SwerveDriveCommand");
   }
 
   /** To be used by auto. Use the drive method during teleop. */
@@ -111,7 +113,7 @@ public class Swerve extends SubsystemBase {
   }
 
   public Command zeroGyroCommand() {
-    return runOnce(this::zeroGyro).withName("ZeroGyroCommand");
+    return new InstantCommand(this::zeroGyro).withName("ZeroGyroCommand");
   }
 
   private void zeroGyro() {
