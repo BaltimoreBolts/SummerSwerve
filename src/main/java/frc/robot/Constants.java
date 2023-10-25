@@ -3,6 +3,7 @@ package frc.robot;
 import com.revrobotics.CANSparkMax.IdleMode;
 
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
@@ -41,6 +42,8 @@ public class Constants {
     public static final double WHEEL_BASE = Units.inchesToMeters(22.75); // Length of the drivetrain measured from the middle of the wheels.
     public static final double WHEEL_DIAMETER = Units.inchesToMeters(4);
     public static final double WHEEL_CIRCUMFERENCE = WHEEL_DIAMETER * Math.PI;
+
+    public static final double k_turnGearRatio = 7.0/150.0;
 
     public static final SwerveDriveKinematics KINEMATICS = new SwerveDriveKinematics(
       new Translation2d(WHEEL_BASE / 2.0, TRACK_WIDTH / 2.0),
@@ -103,28 +106,28 @@ public class Constants {
       7,
       6,
       0,
-      225.4
+      Rotation2d.fromDegrees(225.4)
     );
 
     public static final SwerveModuleConstants MOD_1_Constants = new SwerveModuleConstants(
       4,
       5,
       6,
-      191.074219  
+      Rotation2d.fromDegrees(10)
     );
 
     public static final SwerveModuleConstants MOD_2_Constants = new SwerveModuleConstants(
       7,
       8,
       9,
-      203.906250
+      Rotation2d.fromDegrees(10)
     );
 
     public static final SwerveModuleConstants MOD_3_Constants = new SwerveModuleConstants(
       10,
       11,
       12,
-      155.214844
+      Rotation2d.fromDegrees(10)
     );
   }
 

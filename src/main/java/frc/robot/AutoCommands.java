@@ -61,6 +61,6 @@ public class AutoCommands {
         swerve::setModuleStates,
         swerve),
 
-      swerve.drive(() -> 0.0, () -> 0.0, () -> 0.0, true, false));
+      swerve.drive(() -> 0.0, () -> 0.0, () -> 0.0, true));
   }
 }

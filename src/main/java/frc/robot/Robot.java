@@ -46,15 +46,6 @@ public class Robot extends TimedRobot {
     // and running subsystem periodic() methods.  This must be called from the robot's periodic
     // block in order for anything in the Command-based framework to work.
     CommandScheduler.getInstance().run();
-
-    double slider = Units.degreesToRadians(SmartDashboard.getNumber("Angle", 0.0));
-    if (m_joystick.getRawButton(2)) {
-      robotContainer.m_module.setAngle(slider);
-    } else {
-      robotContainer.m_module.stop();
-    }
-
-    robotContainer.m_module.update();
   }
 
   /**

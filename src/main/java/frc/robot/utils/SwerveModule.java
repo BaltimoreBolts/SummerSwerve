@@ -10,17 +10,13 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
-import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 
 //import edu.wpi.first.wpilibj.AnalogPotentiometer; // FOR ANALOG ENCODER (Maybe)
 import edu.wpi.first.wpilibj.AnalogEncoder; // FOR ANALOG ENCODER
-import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.util.Units;
 import frc.robot.Constants;
 
 
@@ -37,17 +33,13 @@ public class SwerveModule {
   private final SparkMaxPIDController anglePID;
   
   private final AnalogEncoder m_turningEncoder; // FOR ANALOG ENCODER
-  private final double m_thriftyOffsetDegrees;
+  private final Rotation2d m_thriftyOffsetDegrees;
 
-  private double m_startupOffset; // TODO move later
-  
-  private static final double k_turnGearRatio = 7.0/150.0;
-  
-  //private final CANCoder canCoder;
-  //private final double canCoderOffsetDegrees;
+  private Rotation2d m_startupOffset;
 
 
-  private double lastAngle;
+
+  private Rotation2d lastAngle;
 
   public SwerveModule(int moduleNumber, SwerveModuleConstants constants) {
     this.moduleNumber = moduleNumber;
@@ -63,52 +55,42 @@ public class SwerveModule {
 
     m_turningEncoder = new AnalogEncoder(constants.thriftyEncoderID);
     m_thriftyOffsetDegrees = constants.thriftyOffsetDegrees;
-    
-    //canCoder = new CANCoder(constants.canCoderID);
-    //canCoderOffsetDegrees = constants.canCoderOffsetDegrees;
 
     configureDevices();
-    lastAngle = getState().angle.getRadians();
+    lastAngle = getSteerAngle();
   }
 
-  public void setState(SwerveModuleState state, boolean isOpenLoop) {
-    // Prevents angle motor from turning further than it needs to. 
-    // E.G. rotating from 10 to 270 degrees CW vs CCW.
-    state = SwerveModuleState.optimize(state, getState().angle);
+  public void setState(SwerveModuleState state) {
+    state = SwerveModuleState.optimize(state, getSteerAngle());
 
-    if (isOpenLoop) {
-      double speed = state.speedMetersPerSecond / Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND;
-      drivePID.setReference(speed, CANSparkMax.ControlType.kDutyCycle);
-    } else {
-      drivePID.setReference(state.speedMetersPerSecond, CANSparkMax.ControlType.kVelocity, 0, driveFeedforward.calculate(state.speedMetersPerSecond));
-    }
+    double speed = state.speedMetersPerSecond / Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND;
+    setDrivePower(speed);
 
-    double angle = Math.abs(state.speedMetersPerSecond) <= Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND * 0.01
+    Rotation2d angle = Math.abs(state.speedMetersPerSecond) <= Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND * 0.01
       ? lastAngle
-      : state.angle.getRadians();
+      : state.angle;
 
-    anglePID.setReference(angle, CANSparkMax.ControlType.kPosition);
+    setSteerAngle(angle);
     lastAngle = angle;
   }
 
-  public SwerveModuleState getState() {
-    double velocity = driveEncoder.getVelocity();
-    Rotation2d rot = new Rotation2d(angleEncoder.getPosition());
-    return new SwerveModuleState(velocity, rot);
+// TODO - Implement
+//  public SwerveModuleState getState() {
+//    double velocity = driveEncoder.getVelocity();
+//    Rotation2d rot = new Rotation2d(angleEncoder.getPosition());
+//    return new SwerveModuleState(velocity, rot);
+//  }
+
+  public Rotation2d getSteerAngle() {
+    return Rotation2d.fromRotations(angleMotor.getEncoder().getPosition() * Constants.kSwerve.k_turnGearRatio).plus(m_startupOffset);
   }
 
-  public double getSwerveAngle() {
-    // return (m_turningEncoder.getAbsolutePosition()* 2.0 * Math.PI); // should be outputing # between 0-1*2pi
-    return ((Units.rotationsToRadians(angleMotor.getEncoder().getPosition()) * k_turnGearRatio) + m_startupOffset);
+  public Rotation2d getSteerRawAngle() {
+    return Rotation2d.fromRotations(angleMotor.getEncoder().getPosition()).times(Constants.kSwerve.k_turnGearRatio);
   }
 
-  public double getSwerveRawAngle() {
-    // return (m_turningEncoder.getAbsolutePosition()* 2.0 * Math.PI); // should be outputing # between 0-1*2pi
-    return (Units.rotationsToRadians(angleMotor.getEncoder().getPosition()) * k_turnGearRatio);
-  }
-
-  private double getThriftyAngle() {
-    return Units.rotationsToRadians(m_turningEncoder.getAbsolutePosition());
+  public Rotation2d getThriftyAngle() {
+    return Rotation2d.fromRotations(m_turningEncoder.getAbsolutePosition());
   }
 
   public Rotation2d getAngle() {
@@ -151,40 +133,25 @@ public class SwerveModule {
     anglePID.setFF(Constants.kSwerve.ANGLE_KF);
 
     anglePID.setPositionPIDWrappingEnabled(true);
-    anglePID.setPositionPIDWrappingMaxInput(1.0 / k_turnGearRatio);
+    anglePID.setPositionPIDWrappingMaxInput(1.0 / Constants.kSwerve.k_turnGearRatio);
     anglePID.setPositionPIDWrappingMinInput(0.0);
 
     angleEncoder.setPositionConversionFactor(1.0);
     angleEncoder.setVelocityConversionFactor(1.0);
-    //angleEncoder.setPosition(getThriftyAngle() - Units.degreesToRadians(m_thriftyOffsetDegrees));
     configureEncoders();
   }
 
-  public void configureEncoders() {
-    System.out.println("Start");
-    System.out.println(getThriftyAngle());
-    System.out.println(m_thriftyOffsetDegrees);
-    System.out.println(Units.degreesToRadians(m_thriftyOffsetDegrees));
-    System.out.println(getThriftyAngle() - Units.degreesToRadians(m_thriftyOffsetDegrees));
-    System.out.println(getSwerveRawAngle());
-    // angleEncoder.setPosition(Units.radiansToRotations(getThriftyAngle() - Units.degreesToRadians(m_thriftyOffsetDegrees)));
-    m_startupOffset = (getThriftyAngle() - Units.degreesToRadians(m_thriftyOffsetDegrees)) - getSwerveRawAngle();
+  private void configureEncoders() {
+    m_startupOffset = (getThriftyAngle().minus(m_thriftyOffsetDegrees)).minus(getSteerRawAngle());
   }
 
-  public void update() {
-    SmartDashboard.putNumber("Thrifty Encoder", Units.radiansToDegrees(getThriftyAngle()));
-    SmartDashboard.putNumber("Steer Spark Encoder",  Units.radiansToDegrees(getSwerveAngle()));
-    if (RobotController.getUserButton()) {
-      configureEncoders();
-    }
-    
-  }
-
-  public void setAngle(double angle_rad) {
-    double position = Units.radiansToRotations((angle_rad - m_startupOffset) / k_turnGearRatio);
-    SmartDashboard.putNumber("position given", position);
-    SmartDashboard.putNumber("position given 2", angle_rad);
+  private void setSteerAngle(Rotation2d angle_rad) {
+    double position = (angle_rad.minus(m_startupOffset).getRotations() / Constants.kSwerve.k_turnGearRatio);
     anglePID.setReference(position, ControlType.kPosition);
+  }
+
+  private void setDrivePower(double pctSpeed){
+    drivePID.setReference(pctSpeed, CANSparkMax.ControlType.kDutyCycle);
   }
 
   public void stop() {

@@ -45,7 +45,7 @@ public class Swerve extends SubsystemBase {
    * 
    * Double suppliers are just any function that returns a double.
    */
-  public Command drive(DoubleSupplier forwardBackAxis, DoubleSupplier leftRightAxis, DoubleSupplier rotationAxis, boolean isFieldRelative, boolean isOpenLoop) {
+  public Command drive(DoubleSupplier forwardBackAxis, DoubleSupplier leftRightAxis, DoubleSupplier rotationAxis, boolean isFieldRelative) {
     return run(() -> {
       // Grabbing input from suppliers.
       double forwardBack = forwardBackAxis.getAsDouble();
@@ -69,7 +69,7 @@ public class Swerve extends SubsystemBase {
 
       SwerveModuleState[] states = Constants.kSwerve.KINEMATICS.toSwerveModuleStates(chassisSpeeds);
 
-      setModuleStates(states, isOpenLoop);
+      setModuleStates(states);
     }).withName("SwerveDriveCommand");
   }
 
@@ -83,18 +83,19 @@ public class Swerve extends SubsystemBase {
     SwerveDriveKinematics.desaturateWheelSpeeds(states, Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND);
 
     for (int i = 0; i < modules.length; i++) {
-      modules[i].setState(states[modules[i].moduleNumber], isOpenLoop);
+      modules[i].setState(states[modules[i].moduleNumber]);
     }
   }
 
-  public SwerveModuleState[] getStates() {
-    SwerveModuleState currentStates[] = new SwerveModuleState[modules.length];
-    for (int i = 0; i < modules.length; i++) {
-      currentStates[i] = modules[i].getState();
-    }
+  // TODO implement
+  // public SwerveModuleState[] getStates() {
+  //   SwerveModuleState currentStates[] = new SwerveModuleState[modules.length];
+  //   for (int i = 0; i < modules.length; i++) {
+  //     currentStates[i] = modules[i].getState();
+  //   }
 
-    return currentStates;
-  }
+  //   return currentStates;
+  // }
 
   public SwerveModulePosition[] getPositions() {
     SwerveModulePosition currentStates[] = new SwerveModulePosition[modules.length];
@@ -134,24 +135,25 @@ public class Swerve extends SubsystemBase {
   public void initSendable(SendableBuilder builder) {
     super.initSendable(builder);
     for (SwerveModule module : modules) {
-      builder.addStringProperty(
-        String.format("Module %d", module.moduleNumber),
-        () -> {
-          SwerveModuleState state = module.getState();
-          return String.format("%6.2fm/s %6.3fdeg", state.speedMetersPerSecond, state.angle.getDegrees());
-        },
+      // TODO implement
+      // builder.addStringProperty(
+      //   String.format("Module %d", module.moduleNumber),
+      //   () -> {
+      //     SwerveModuleState state = module.getState();
+      //     return String.format("%6.2fm/s %6.3fdeg", state.speedMetersPerSecond, state.angle.getDegrees());
+      //   },
+      //   null);
+
+      builder.addDoubleProperty(
+        String.format("Module angle %d", module.moduleNumber),
+        () -> module.getSteerAngle().getDegrees(),
         null);
 
-        builder.addDoubleProperty(
-          String.format("Cancoder %d", module.moduleNumber),
-          () -> module.getSwerveAngle(),
-          null);
-
-          
-        builder.addDoubleProperty(
-          String.format("Angle %d", module.moduleNumber),
-          () -> module.getAngle().getDegrees(),
-          null);
+        
+      builder.addDoubleProperty(
+        String.format("Angle %d", module.moduleNumber),
+        () -> module.getThriftyAngle().getDegrees(),
+        null);
     }
   }
 }
