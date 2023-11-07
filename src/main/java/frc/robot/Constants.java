@@ -103,30 +103,30 @@ public class Constants {
      * This is to make offset slightly more accurate and easier to measure.
      */
     public static final SwerveModuleConstants MOD_0_Constants = new SwerveModuleConstants(
-      7,
-      6,
+      3,
+      2,
       0,
       Rotation2d.fromDegrees(225.4)
     );
 
     public static final SwerveModuleConstants MOD_1_Constants = new SwerveModuleConstants(
-      4,
       5,
-      6,
+      4,
+      1,
       Rotation2d.fromDegrees(10)
     );
 
     public static final SwerveModuleConstants MOD_2_Constants = new SwerveModuleConstants(
       7,
-      8,
-      9,
+      6,
+      2,
       Rotation2d.fromDegrees(10)
     );
 
     public static final SwerveModuleConstants MOD_3_Constants = new SwerveModuleConstants(
-      10,
-      11,
-      12,
+      9,
+      8,
+      3,
       Rotation2d.fromDegrees(10)
     );
   }
