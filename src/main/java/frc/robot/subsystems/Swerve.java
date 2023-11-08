@@ -113,6 +113,7 @@ public class Swerve extends SubsystemBase {
     return Rotation2d.fromDegrees(-gyro.getYaw());
   }
 
+
   public Command zeroGyroCommand() {
     return new InstantCommand(this::zeroGyro).withName("ZeroGyroCommand");
   }
@@ -136,6 +137,7 @@ public class Swerve extends SubsystemBase {
     for (SwerveModule module : modules) {
       SmartDashboard.putNumber(String.format("Thrifty angle %d", module.moduleNumber), module.getThriftyAngle().getDegrees());
       SmartDashboard.putNumber(String.format("Max angle %d", module.moduleNumber), module.getSteerAngle().getDegrees());
+      SmartDashboard.putNumber("navX", gyro.getAngle());
     }
   }
 
