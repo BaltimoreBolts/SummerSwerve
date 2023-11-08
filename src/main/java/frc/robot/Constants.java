@@ -46,10 +46,10 @@ public class Constants {
     public static final double k_turnGearRatio = 7.0/150.0;
 
     public static final SwerveDriveKinematics KINEMATICS = new SwerveDriveKinematics(
-      new Translation2d(WHEEL_BASE / 2.0, TRACK_WIDTH / 2.0),
-      new Translation2d(WHEEL_BASE / 2.0, -TRACK_WIDTH / 2.0),
-      new Translation2d(-WHEEL_BASE / 2.0, TRACK_WIDTH / 2.0),
-      new Translation2d(-WHEEL_BASE / 2.0, -TRACK_WIDTH / 2.0)
+      new Translation2d(-WHEEL_BASE / 2.0, -TRACK_WIDTH / 2.0), // 0 - back right
+      new Translation2d(-WHEEL_BASE / 2.0, TRACK_WIDTH / 2.0), // 1 - back left
+      new Translation2d(WHEEL_BASE / 2.0, TRACK_WIDTH / 2.0), // 2 - front left
+      new Translation2d(WHEEL_BASE / 2.0, -TRACK_WIDTH / 2.0) // 3 - front right
     );
 
     public static final double DRIVE_GEAR_RATIO = 6.75 / 1.0; // 6.75:1
@@ -89,9 +89,8 @@ public class Constants {
     public static final double MAX_ANGULAR_RADIANS_PER_SECOND = 4.0;
 
     /** Inversions. */
-    public static final boolean DRIVE_MOTOR_INVERSION = true;
+    public static final boolean DRIVE_MOTOR_INVERSION = false;
     public static final boolean ANGLE_MOTOR_INVERSION = true;
-    public static final boolean CANCODER_INVERSION = false;
 
     /** Idle modes. */
     public static final IdleMode DRIVE_IDLE_MODE = IdleMode.kBrake;
@@ -102,32 +101,36 @@ public class Constants {
      * CanCoder offset is in DEGREES, not radians like the rest of the repo.
      * This is to make offset slightly more accurate and easier to measure.
      */
+
+    //mod 0 = back right
     public static final SwerveModuleConstants MOD_0_Constants = new SwerveModuleConstants(
       3,
       2,
       0,
-      Rotation2d.fromDegrees(225.4)
+      Rotation2d.fromDegrees(260.9)
     );
-
+    //mod 1 = back left
     public static final SwerveModuleConstants MOD_1_Constants = new SwerveModuleConstants(
       5,
       4,
       1,
-      Rotation2d.fromDegrees(10)
+      Rotation2d.fromDegrees(295.6)
     );
 
+    //mod 2 = front left
     public static final SwerveModuleConstants MOD_2_Constants = new SwerveModuleConstants(
       7,
       6,
       2,
-      Rotation2d.fromDegrees(10)
+      Rotation2d.fromDegrees(293.4)
     );
 
+    //mod 3 = front right
     public static final SwerveModuleConstants MOD_3_Constants = new SwerveModuleConstants(
       9,
       8,
       3,
-      Rotation2d.fromDegrees(10)
+      Rotation2d.fromDegrees(314.2)
     );
   }
 
