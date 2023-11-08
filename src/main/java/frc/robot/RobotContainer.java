@@ -21,8 +21,6 @@ public class RobotContainer {
 
   // public final AutoCommands auto;
 
-  public final SwerveModule m_module = new SwerveModule(0, Constants.kSwerve.MOD_0_Constants);
-
   public RobotContainer() {
     driver = new Joystick(Constants.kControls.DRIVE_JOYSTICK_ID);
 

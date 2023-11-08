@@ -12,6 +12,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.util.sendable.SendableBuilder;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -131,6 +132,11 @@ public class Swerve extends SubsystemBase {
   @Override
   public void periodic() {
     swerveOdometry.update(getYaw(), getPositions());
+
+    for (SwerveModule module : modules) {
+      SmartDashboard.putNumber(String.format("Thrifty angle %d", module.moduleNumber), module.getThriftyAngle().getDegrees());
+      SmartDashboard.putNumber(String.format("Max angle %d", module.moduleNumber), module.getSteerAngle().getDegrees());
+    }
   }
 
   @Override
@@ -146,16 +152,19 @@ public class Swerve extends SubsystemBase {
       //   },
       //   null);
 
-      builder.addDoubleProperty(
-        String.format("Module angle %d", module.moduleNumber),
-        () -> module.getSteerAngle().getDegrees(),
-        null);
+      // builder.addDoubleProperty(
+      //   String.format("Module angle %d", module.moduleNumber),
+      //   () -> module.getSteerAngle().getDegrees(),
+      //   null);
 
         
-      builder.addDoubleProperty(
-        String.format("Angle %d", module.moduleNumber),
-        () -> module.getThriftyAngle().getDegrees(),
-        null);
+      // builder.addDoubleProperty(
+      //   String.format("Angle %d", module.moduleNumber),
+      //   () -> module.getThriftyAngle().getDegrees(),
+      //   null);
+
+      SmartDashboard.putNumber(String.format("Thrifty angle %d", module.moduleNumber), module.getThriftyAngle().getDegrees());
+      SmartDashboard.putNumber(String.format("Max angle %d", module.moduleNumber), module.getSteerAngle().getDegrees());
     }
   }
 }
