@@ -12,7 +12,10 @@ import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.util.sendable.SendableBuilder;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import frc.robot.utils.SwerveModule;
@@ -45,8 +48,8 @@ public class Swerve extends SubsystemBase {
    * 
    * Double suppliers are just any function that returns a double.
    */
-  public Command drive(DoubleSupplier forwardBackAxis, DoubleSupplier leftRightAxis, DoubleSupplier rotationAxis, boolean isFieldRelative, boolean isOpenLoop) {
-    return run(() -> {
+  public Command drive(DoubleSupplier forwardBackAxis, DoubleSupplier leftRightAxis, DoubleSupplier rotationAxis, boolean isFieldRelative) {
+    return new RunCommand(() -> {
       // Grabbing input from suppliers.
       double forwardBack = forwardBackAxis.getAsDouble();
       double leftRight = leftRightAxis.getAsDouble();
@@ -56,9 +59,9 @@ public class Swerve extends SubsystemBase {
       forwardBack = Math.abs(forwardBack) < Constants.kControls.AXIS_DEADZONE ? 0 : forwardBack;
       leftRight = Math.abs(leftRight) < Constants.kControls.AXIS_DEADZONE ? 0 : leftRight;
       rotation = Math.abs(rotation) < Constants.kControls.AXIS_DEADZONE ? 0 : rotation;
-
+      
       // Converting to m/s
-      forwardBack *= Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND;
+      forwardBack *= Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND; 
       leftRight *= Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND;
       rotation *= Constants.kSwerve.MAX_ANGULAR_RADIANS_PER_SECOND;
 
@@ -69,8 +72,8 @@ public class Swerve extends SubsystemBase {
 
       SwerveModuleState[] states = Constants.kSwerve.KINEMATICS.toSwerveModuleStates(chassisSpeeds);
 
-      setModuleStates(states, isOpenLoop);
-    }).withName("SwerveDriveCommand");
+      setModuleStates(states);
+    }, this).withName("SwerveDriveCommand");
   }
 
   /** To be used by auto. Use the drive method during teleop. */
@@ -83,18 +86,19 @@ public class Swerve extends SubsystemBase {
     SwerveDriveKinematics.desaturateWheelSpeeds(states, Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND);
 
     for (int i = 0; i < modules.length; i++) {
-      modules[i].setState(states[modules[i].moduleNumber], isOpenLoop);
+      modules[i].setState(states[modules[i].moduleNumber]);
     }
   }
 
-  public SwerveModuleState[] getStates() {
-    SwerveModuleState currentStates[] = new SwerveModuleState[modules.length];
-    for (int i = 0; i < modules.length; i++) {
-      currentStates[i] = modules[i].getState();
-    }
+  // TODO implement
+  // public SwerveModuleState[] getStates() {
+  //   SwerveModuleState currentStates[] = new SwerveModuleState[modules.length];
+  //   for (int i = 0; i < modules.length; i++) {
+  //     currentStates[i] = modules[i].getState();
+  //   }
 
-    return currentStates;
-  }
+  //   return currentStates;
+  // }
 
   public SwerveModulePosition[] getPositions() {
     SwerveModulePosition currentStates[] = new SwerveModulePosition[modules.length];
@@ -109,8 +113,9 @@ public class Swerve extends SubsystemBase {
     return Rotation2d.fromDegrees(-gyro.getYaw());
   }
 
+
   public Command zeroGyroCommand() {
-    return runOnce(this::zeroGyro).withName("ZeroGyroCommand");
+    return new InstantCommand(this::zeroGyro).withName("ZeroGyroCommand");
   }
 
   private void zeroGyro() {
@@ -128,30 +133,40 @@ public class Swerve extends SubsystemBase {
   @Override
   public void periodic() {
     swerveOdometry.update(getYaw(), getPositions());
+
+    for (SwerveModule module : modules) {
+      SmartDashboard.putNumber(String.format("Thrifty angle %d", module.moduleNumber), module.getThriftyAngle().getDegrees());
+      SmartDashboard.putNumber(String.format("Max angle %d", module.moduleNumber), module.getSteerAngle().getDegrees());
+      SmartDashboard.putNumber("navX", gyro.getAngle());
+    }
   }
 
   @Override
   public void initSendable(SendableBuilder builder) {
     super.initSendable(builder);
     for (SwerveModule module : modules) {
-      builder.addStringProperty(
-        String.format("Module %d", module.moduleNumber),
-        () -> {
-          SwerveModuleState state = module.getState();
-          return String.format("%6.2fm/s %6.3fdeg", state.speedMetersPerSecond, state.angle.getDegrees());
-        },
-        null);
+      // TODO implement
+      // builder.addStringProperty(
+      //   String.format("Module %d", module.moduleNumber),
+      //   () -> {
+      //     SwerveModuleState state = module.getState();
+      //     return String.format("%6.2fm/s %6.3fdeg", state.speedMetersPerSecond, state.angle.getDegrees());
+      //   },
+      //   null);
 
-        builder.addDoubleProperty(
-          String.format("Cancoder %d", module.moduleNumber),
-          () -> module.getCanCoder(),
-          null);
+      // builder.addDoubleProperty(
+      //   String.format("Module angle %d", module.moduleNumber),
+      //   () -> module.getSteerAngle().getDegrees(),
+      //   null);
 
-          
-        builder.addDoubleProperty(
-          String.format("Angle %d", module.moduleNumber),
-          () -> module.getAngle().getDegrees(),
-          null);
+        
+      // builder.addDoubleProperty(
+      //   String.format("Angle %d", module.moduleNumber),
+      //   () -> module.getThriftyAngle().getDegrees(),
+      //   null);
+
+      SmartDashboard.putNumber(String.format("Thrifty angle %d", module.moduleNumber), module.getThriftyAngle().getDegrees());
+      SmartDashboard.putNumber(String.format("Max angle %d", module.moduleNumber), module.getSteerAngle().getDegrees());
     }
   }
 }

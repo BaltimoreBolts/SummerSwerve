@@ -1,21 +1,24 @@
 package frc.robot.utils;
 
-import com.ctre.phoenix.sensors.AbsoluteSensorRange;
-import com.ctre.phoenix.sensors.CANCoder;
-import com.ctre.phoenix.sensors.CANCoderConfiguration;
-import com.ctre.phoenix.sensors.SensorInitializationStrategy;
-import com.ctre.phoenix.sensors.SensorTimeBase;
+//import com.ctre.phoenix.sensors.AbsoluteSensorRange;
+//import com.ctre.phoenix.sensors.CANCoder;
+//import com.ctre.phoenix.sensors.CANCoderConfiguration;
+//import com.ctre.phoenix.sensors.SensorInitializationStrategy;
+//import com.ctre.phoenix.sensors.SensorTimeBase;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+//import edu.wpi.first.wpilibj.AnalogPotentiometer; // FOR ANALOG ENCODER (Maybe)
+import edu.wpi.first.wpilibj.AnalogEncoder; // FOR ANALOG ENCODER
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.util.Units;
 import frc.robot.Constants;
+
 
 public class SwerveModule {
   public final int moduleNumber;
@@ -29,10 +32,14 @@ public class SwerveModule {
   private final RelativeEncoder angleEncoder;
   private final SparkMaxPIDController anglePID;
   
-  private final CANCoder canCoder;
-  private final double canCoderOffsetDegrees;
+  private final AnalogEncoder m_turningEncoder; // FOR ANALOG ENCODER
+  private final Rotation2d m_thriftyOffsetDegrees;
 
-  private double lastAngle;
+  private Rotation2d m_startupOffset;
+
+
+
+  private Rotation2d lastAngle;
 
   public SwerveModule(int moduleNumber, SwerveModuleConstants constants) {
     this.moduleNumber = moduleNumber;
@@ -46,41 +53,44 @@ public class SwerveModule {
     angleEncoder = angleMotor.getEncoder();
     anglePID = angleMotor.getPIDController();
 
-    canCoder = new CANCoder(constants.canCoderID);
-    canCoderOffsetDegrees = constants.canCoderOffsetDegrees;
+    m_turningEncoder = new AnalogEncoder(constants.thriftyEncoderID);
+    m_thriftyOffsetDegrees = constants.thriftyOffsetDegrees;
 
     configureDevices();
-    lastAngle = getState().angle.getRadians();
+    lastAngle = getSteerAngle();
   }
 
-  public void setState(SwerveModuleState state, boolean isOpenLoop) {
-    // Prevents angle motor from turning further than it needs to. 
-    // E.G. rotating from 10 to 270 degrees CW vs CCW.
-    state = SwerveModuleState.optimize(state, getState().angle);
+  public void setState(SwerveModuleState state) {
+    state = SwerveModuleState.optimize(state, getSteerAngle());
 
-    if (isOpenLoop) {
-      double speed = state.speedMetersPerSecond / Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND;
-      drivePID.setReference(speed, CANSparkMax.ControlType.kDutyCycle);
-    } else {
-      drivePID.setReference(state.speedMetersPerSecond, CANSparkMax.ControlType.kVelocity, 0, driveFeedforward.calculate(state.speedMetersPerSecond));
-    }
+    double speed = state.speedMetersPerSecond / Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND;
+    setDrivePower(speed);
 
-    double angle = Math.abs(state.speedMetersPerSecond) <= Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND * 0.01
+    Rotation2d angle = Math.abs(state.speedMetersPerSecond) <= Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND * 0.01
       ? lastAngle
-      : state.angle.getRadians();
+      : state.angle;
 
-    anglePID.setReference(angle, CANSparkMax.ControlType.kPosition);
+    setSteerAngle(angle);
     lastAngle = angle;
   }
 
-  public SwerveModuleState getState() {
-    double velocity = driveEncoder.getVelocity();
-    Rotation2d rot = new Rotation2d(angleEncoder.getPosition());
-    return new SwerveModuleState(velocity, rot);
+// TODO - Implement
+//  public SwerveModuleState getState() {
+//    double velocity = driveEncoder.getVelocity();
+//    Rotation2d rot = new Rotation2d(angleEncoder.getPosition());
+//    return new SwerveModuleState(velocity, rot);
+//  }
+
+  public Rotation2d getSteerAngle() {
+    return Rotation2d.fromRotations(angleMotor.getEncoder().getPosition() * Constants.kSwerve.k_turnGearRatio).plus(m_startupOffset);
   }
 
-  public double getCanCoder() {
-    return canCoder.getAbsolutePosition();
+  public Rotation2d getSteerRawAngle() {
+    return Rotation2d.fromRotations(angleMotor.getEncoder().getPosition()).times(Constants.kSwerve.k_turnGearRatio);
+  }
+
+  public Rotation2d getThriftyAngle() {
+    return Rotation2d.fromRotations(m_turningEncoder.getAbsolutePosition());
   }
 
   public Rotation2d getAngle() {
@@ -123,21 +133,29 @@ public class SwerveModule {
     anglePID.setFF(Constants.kSwerve.ANGLE_KF);
 
     anglePID.setPositionPIDWrappingEnabled(true);
-    anglePID.setPositionPIDWrappingMaxInput(2 * Math.PI);
-    anglePID.setPositionPIDWrappingMinInput(0);
+    anglePID.setPositionPIDWrappingMaxInput(1.0 / Constants.kSwerve.k_turnGearRatio);
+    anglePID.setPositionPIDWrappingMinInput(0.0);
 
-    angleEncoder.setPositionConversionFactor(Constants.kSwerve.ANGLE_ROTATIONS_TO_RADIANS);
-    angleEncoder.setVelocityConversionFactor(Constants.kSwerve.ANGLE_RPM_TO_RADIANS_PER_SECOND);
-    angleEncoder.setPosition(Units.degreesToRadians(canCoder.getAbsolutePosition() - canCoderOffsetDegrees));
+    angleEncoder.setPositionConversionFactor(1.0);
+    angleEncoder.setVelocityConversionFactor(1.0);
+    configureEncoders();
+  }
 
-    // CanCoder configuration.
-    CANCoderConfiguration canCoderConfiguration = new CANCoderConfiguration();
-    canCoderConfiguration.absoluteSensorRange = AbsoluteSensorRange.Unsigned_0_to_360;
-    canCoderConfiguration.sensorDirection = Constants.kSwerve.CANCODER_INVERSION;
-    canCoderConfiguration.initializationStrategy = SensorInitializationStrategy.BootToAbsolutePosition;
-    canCoderConfiguration.sensorTimeBase = SensorTimeBase.PerSecond;
-    
-    canCoder.configFactoryDefault();
-    canCoder.configAllSettings(canCoderConfiguration);
+  private void configureEncoders() {
+    m_startupOffset = (getThriftyAngle().minus(m_thriftyOffsetDegrees)).minus(getSteerRawAngle());
+  }
+
+  private void setSteerAngle(Rotation2d angle_rad) {
+    double position = (angle_rad.minus(m_startupOffset).getRotations() / Constants.kSwerve.k_turnGearRatio);
+    anglePID.setReference(position, ControlType.kPosition);
+  }
+
+  private void setDrivePower(double pctSpeed){
+    drivePID.setReference(pctSpeed, CANSparkMax.ControlType.kDutyCycle);
+  }
+
+  public void stop() {
+    angleMotor.set(0);
+    driveMotor.set(0);
   }
 }
