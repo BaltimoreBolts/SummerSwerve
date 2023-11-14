@@ -59,7 +59,7 @@ public class Swerve extends SubsystemBase {
       forwardBack = Math.abs(forwardBack) < Constants.kControls.AXIS_DEADZONE ? 0 : forwardBack;
       leftRight = Math.abs(leftRight) < Constants.kControls.AXIS_DEADZONE ? 0 : leftRight;
       rotation = Math.abs(rotation) < Constants.kControls.AXIS_DEADZONE ? 0 : rotation;
-      
+
       // Converting to m/s
       forwardBack *= Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND; 
       leftRight *= Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND;
@@ -137,6 +137,7 @@ public class Swerve extends SubsystemBase {
     for (SwerveModule module : modules) {
       SmartDashboard.putNumber(String.format("Thrifty angle %d", module.moduleNumber), module.getThriftyAngle().getDegrees());
       SmartDashboard.putNumber(String.format("Max angle %d", module.moduleNumber), module.getSteerAngle().getDegrees());
+      SmartDashboard.putNumber(String.format("Distance %d", module.moduleNumber), module.getDisance());
       SmartDashboard.putNumber("navX", gyro.getAngle());
     }
   }

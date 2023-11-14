@@ -93,6 +93,10 @@ public class SwerveModule {
     return Rotation2d.fromRotations(m_turningEncoder.getAbsolutePosition());
   }
 
+  public double getDisance() {
+    return driveEncoder.getPosition() * Constants.kSwerve.DRIVE_GEAR_RATIO * Constants.kSwerve.WHEEL_CIRCUMFERENCE;
+  }
+
   public Rotation2d getAngle() {
     return new Rotation2d(angleEncoder.getPosition());
   }
