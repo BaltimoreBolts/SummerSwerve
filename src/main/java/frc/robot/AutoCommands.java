@@ -47,19 +47,19 @@ public class AutoCommands {
       
       run(() -> {
         if (isFirstPath) {
-          swerve.resetOdometry(traj.getInitialHolonomicPose());
+          //swerve.resetOdometry(traj.getInitialHolonomicPose());
         }
       }, swerve),
 
-      new PPSwerveControllerCommand(
-        traj,
-        swerve::getPose,
-        Constants.kSwerve.KINEMATICS,
-        new PIDController(Constants.kAuto.X_CONTROLLER_KP, 0, 0),
-        new PIDController(Constants.kAuto.Y_CONTROLLER_KP, 0, 0),
-        new PIDController(Constants.kAuto.THETA_CONTROLLER_KP, 0, 0),
-        swerve::setModuleStates,
-        swerve),
+      // new PPSwerveControllerCommand(
+      //   traj,
+      //   swerve::getPose,
+      //   Constants.kSwerve.KINEMATICS,
+      //   new PIDController(Constants.kAuto.X_CONTROLLER_KP, 0, 0),
+      //   new PIDController(Constants.kAuto.Y_CONTROLLER_KP, 0, 0),
+      //   new PIDController(Constants.kAuto.THETA_CONTROLLER_KP, 0, 0),
+      //   swerve::setModuleStates,
+      //   swerve),
 
       swerve.drive(() -> 0.0, () -> 0.0, () -> 0.0, true));
   }

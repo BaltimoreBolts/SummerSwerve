@@ -13,8 +13,11 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 //import edu.wpi.first.wpilibj.AnalogPotentiometer; // FOR ANALOG ENCODER (Maybe)
 import edu.wpi.first.wpilibj.AnalogEncoder; // FOR ANALOG ENCODER
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import frc.robot.Constants;
@@ -36,8 +39,6 @@ public class SwerveModule {
   private final Rotation2d m_thriftyOffsetDegrees;
 
   private Rotation2d m_startupOffset;
-
-
 
   private Rotation2d lastAngle;
 
@@ -93,18 +94,16 @@ public class SwerveModule {
     return Rotation2d.fromRotations(m_turningEncoder.getAbsolutePosition());
   }
 
+  public double getDriveRot() {
+    return driveEncoder.getPosition() / Constants.kSwerve.DRIVE_GEAR_RATIO;
+  }
+
   public double getDisance() {
-    return driveEncoder.getPosition() * Constants.kSwerve.DRIVE_GEAR_RATIO * Constants.kSwerve.WHEEL_CIRCUMFERENCE;
+    return driveEncoder.getPosition() / Constants.kSwerve.DRIVE_GEAR_RATIO * Constants.kSwerve.WHEEL_CIRCUMFERENCE;
   }
 
-  public Rotation2d getAngle() {
-    return new Rotation2d(angleEncoder.getPosition());
-  }
-
-  public SwerveModulePosition getPosition() {
-    double distance = driveEncoder.getPosition();
-    Rotation2d rot = new Rotation2d(angleEncoder.getPosition());
-    return new SwerveModulePosition(distance, rot);
+  public SwerveModulePosition getState() {
+    return new SwerveModulePosition(getDisance(), getSteerAngle());
   }
 
   private void configureDevices() {
@@ -121,8 +120,8 @@ public class SwerveModule {
     drivePID.setD(Constants.kSwerve.DRIVE_KD);
     drivePID.setFF(Constants.kSwerve.DRIVE_KF);
  
-    driveEncoder.setPositionConversionFactor(Constants.kSwerve.DRIVE_ROTATIONS_TO_METERS);
-    driveEncoder.setVelocityConversionFactor(Constants.kSwerve.DRIVE_RPM_TO_METERS_PER_SECOND);
+    driveEncoder.setPositionConversionFactor(1);
+    driveEncoder.setVelocityConversionFactor(1);
     driveEncoder.setPosition(0);
 
     // Angle motor configuration.

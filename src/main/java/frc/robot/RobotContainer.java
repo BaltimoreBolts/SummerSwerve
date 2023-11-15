@@ -46,8 +46,15 @@ public class RobotContainer {
       true
     ));
 
+    new JoystickButton(driver, 1).whileTrue(swerve.drive(
+      () -> -Constants.kControls.X_DRIVE_LIMITER.calculate(driver.getRawAxis(Constants.kControls.TRANSLATION_Y_AXIS)*.5),
+      () -> 0.0, 
+      () -> 0.0,
+      true
+    ));
+
     new JoystickButton(driver, Constants.kControls.GYRO_RESET_BUTTON)
-      .onTrue(swerve.zeroGyroCommand());
+      .onTrue(new InstantCommand(() -> swerve.resetOdometry()));
   }
 
     /**

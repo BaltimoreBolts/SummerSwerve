@@ -1,17 +1,21 @@
 package frc.robot.subsystems;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.DoubleSupplier;
 
 import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.util.sendable.SendableBuilder;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -23,9 +27,11 @@ import frc.robot.utils.SwerveModule;
 public class Swerve extends SubsystemBase {
   private final SwerveModule[] modules;
 
-  private final SwerveDriveOdometry swerveOdometry;
-
   private final AHRS gyro;
+
+  private final SwerveDriveOdometry m_odometry;
+
+  private final Field2d m_dashboardField = new Field2d();
 
   public Swerve() {
     gyro = new AHRS();
@@ -37,8 +43,11 @@ public class Swerve extends SubsystemBase {
       new SwerveModule(3, Constants.kSwerve.MOD_3_Constants),
     };
 
-    swerveOdometry = new SwerveDriveOdometry(Constants.kSwerve.KINEMATICS, getYaw(), getPositions());
     zeroGyro();
+
+    m_odometry = new SwerveDriveOdometry(Constants.kSwerve.KINEMATICS, getYaw(), getStates());
+
+    SmartDashboard.putData("Field", m_dashboardField);
   }
 
   /** 
@@ -67,7 +76,7 @@ public class Swerve extends SubsystemBase {
 
       // Get desired module states.
       ChassisSpeeds chassisSpeeds = isFieldRelative
-        ? ChassisSpeeds.fromFieldRelativeSpeeds(forwardBack, leftRight, rotation, getYaw())
+        ? ChassisSpeeds.fromFieldRelativeSpeeds(forwardBack, leftRight, rotation, m_odometry.getPoseMeters().getRotation())
         : new ChassisSpeeds(forwardBack, leftRight, rotation);
 
       SwerveModuleState[] states = Constants.kSwerve.KINEMATICS.toSwerveModuleStates(chassisSpeeds);
@@ -90,20 +99,10 @@ public class Swerve extends SubsystemBase {
     }
   }
 
-  // TODO implement
-  // public SwerveModuleState[] getStates() {
-  //   SwerveModuleState currentStates[] = new SwerveModuleState[modules.length];
-  //   for (int i = 0; i < modules.length; i++) {
-  //     currentStates[i] = modules[i].getState();
-  //   }
-
-  //   return currentStates;
-  // }
-
-  public SwerveModulePosition[] getPositions() {
+  public SwerveModulePosition[] getStates() {
     SwerveModulePosition currentStates[] = new SwerveModulePosition[modules.length];
     for (int i = 0; i < modules.length; i++) {
-      currentStates[i] = modules[i].getPosition();
+      currentStates[i] = modules[i].getState();
     }
 
     return currentStates;
@@ -113,6 +112,9 @@ public class Swerve extends SubsystemBase {
     return Rotation2d.fromDegrees(-gyro.getYaw());
   }
 
+  public void resetOdometry() {
+    m_odometry.resetPosition(getYaw(), getStates(), new Pose2d());
+  }
 
   public Command zeroGyroCommand() {
     return new InstantCommand(this::zeroGyro).withName("ZeroGyroCommand");
@@ -122,52 +124,23 @@ public class Swerve extends SubsystemBase {
     gyro.zeroYaw();
   }
 
-  public Pose2d getPose() {
-    return swerveOdometry.getPoseMeters();
-  }
-
-  public void resetOdometry(Pose2d pose) {
-    swerveOdometry.resetPosition(getYaw(), getPositions(), pose);
-  }
 
   @Override
   public void periodic() {
-    swerveOdometry.update(getYaw(), getPositions());
+    m_odometry.update(getYaw(), getStates());
+    m_dashboardField.setRobotPose(m_odometry.getPoseMeters());
+    SmartDashboard.putNumber("x_val odom", m_odometry.getPoseMeters().getX());
+    SmartDashboard.putNumber("y_val odom", m_odometry.getPoseMeters().getY());
+    SmartDashboard.putNumber("angle odom", m_odometry.getPoseMeters().getRotation().getDegrees());
+
+    SmartDashboard.putNumber("navX", gyro.getAngle());
 
     for (SwerveModule module : modules) {
       SmartDashboard.putNumber(String.format("Thrifty angle %d", module.moduleNumber), module.getThriftyAngle().getDegrees());
       SmartDashboard.putNumber(String.format("Max angle %d", module.moduleNumber), module.getSteerAngle().getDegrees());
       SmartDashboard.putNumber(String.format("Distance %d", module.moduleNumber), module.getDisance());
-      SmartDashboard.putNumber("navX", gyro.getAngle());
+      SmartDashboard.putNumber(String.format("Rot %d", module.moduleNumber), module.getDriveRot());
     }
   }
-
-  @Override
-  public void initSendable(SendableBuilder builder) {
-    super.initSendable(builder);
-    for (SwerveModule module : modules) {
-      // TODO implement
-      // builder.addStringProperty(
-      //   String.format("Module %d", module.moduleNumber),
-      //   () -> {
-      //     SwerveModuleState state = module.getState();
-      //     return String.format("%6.2fm/s %6.3fdeg", state.speedMetersPerSecond, state.angle.getDegrees());
-      //   },
-      //   null);
-
-      // builder.addDoubleProperty(
-      //   String.format("Module angle %d", module.moduleNumber),
-      //   () -> module.getSteerAngle().getDegrees(),
-      //   null);
-
-        
-      // builder.addDoubleProperty(
-      //   String.format("Angle %d", module.moduleNumber),
-      //   () -> module.getThriftyAngle().getDegrees(),
-      //   null);
-
-      SmartDashboard.putNumber(String.format("Thrifty angle %d", module.moduleNumber), module.getThriftyAngle().getDegrees());
-      SmartDashboard.putNumber(String.format("Max angle %d", module.moduleNumber), module.getSteerAngle().getDegrees());
-    }
-  }
+  
 }
