@@ -14,7 +14,10 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.util.datalog.DataLog;
+import edu.wpi.first.util.datalog.DoubleLogEntry;
 import edu.wpi.first.util.sendable.SendableBuilder;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -33,6 +36,10 @@ public class Swerve extends SubsystemBase {
 
   private final Field2d m_dashboardField = new Field2d();
 
+  private final List<DoubleLogEntry> m_moduleRawVelocityEntries = new ArrayList<DoubleLogEntry>();
+  private final List<DoubleLogEntry> m_modulepercentPowerEntries = new ArrayList<DoubleLogEntry>();
+
+
   public Swerve() {
     gyro = new AHRS();
 
@@ -42,6 +49,12 @@ public class Swerve extends SubsystemBase {
       new SwerveModule(2, Constants.kSwerve.MOD_2_Constants),
       new SwerveModule(3, Constants.kSwerve.MOD_3_Constants),
     };
+
+    DataLog log = DataLogManager.getLog();
+    for (int i = 0; i < 4; i++) {
+      m_moduleRawVelocityEntries.add(new DoubleLogEntry(log, "/swerve/moduleRawVelocity[" + i + "]"));
+      m_modulepercentPowerEntries.add(new DoubleLogEntry(log, "/swerve/moduleOutPower[" + i + "]"));
+    }
 
     zeroGyro();
 
@@ -83,6 +96,19 @@ public class Swerve extends SubsystemBase {
 
       setModuleStates(states);
     }, this).withName("SwerveDriveCommand");
+  }
+
+  public Command driveTestVelocity(DoubleSupplier velocity) {
+    return new RunCommand(() -> {
+      ChassisSpeeds chassisSpeeds = new ChassisSpeeds(1.0, 0.0, 0.0);
+
+      SwerveModuleState[] states = Constants.kSwerve.KINEMATICS.toSwerveModuleStates(chassisSpeeds);
+
+      for (int i = 0; i < modules.length; i++) {
+        states[i].speedMetersPerSecond = velocity.getAsDouble();
+        modules[i].setStateTestVelocity(states[i]);
+      }
+    });
   }
 
   /** To be used by auto. Use the drive method during teleop. */
@@ -135,12 +161,21 @@ public class Swerve extends SubsystemBase {
 
     SmartDashboard.putNumber("navX", gyro.getAngle());
 
+    int i = 0;
+
     for (SwerveModule module : modules) {
       SmartDashboard.putNumber(String.format("Thrifty angle %d", module.moduleNumber), module.getThriftyAngle().getDegrees());
       SmartDashboard.putNumber(String.format("Max angle %d", module.moduleNumber), module.getSteerAngle().getDegrees());
       SmartDashboard.putNumber(String.format("Distance %d", module.moduleNumber), module.getDisance());
       SmartDashboard.putNumber(String.format("Rot %d", module.moduleNumber), module.getDriveRot());
+
+      m_moduleRawVelocityEntries.get(i).append(module.getDriveRawVelocity());
+      m_modulepercentPowerEntries.get(i).append(module.getDriveOutputPower());
+      i++;
     }
+
+    SmartDashboard.putNumber("percentPower", modules[0].getDriveOutputPower());
+    SmartDashboard.putNumber("rawVelocity", modules[0].getDriveRawVelocity());
   }
   
 }
