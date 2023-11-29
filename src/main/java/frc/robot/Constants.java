@@ -73,7 +73,7 @@ public class Constants {
     public static final double DRIVE_KA = 0.0;
 
     /** Drive motor PID values. */
-    public static final double DRIVE_KP = 0.001;
+    public static final double DRIVE_KP = 0.00025;
     public static final double DRIVE_KI = 0.0;
     public static final double DRIVE_KD = 0.0;
     public static final double DRIVE_KF = DRIVE_KV;

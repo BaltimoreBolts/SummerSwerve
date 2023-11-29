@@ -14,6 +14,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.DoubleLogEntry;
 import edu.wpi.first.util.sendable.SendableBuilder;
@@ -61,6 +62,10 @@ public class Swerve extends SubsystemBase {
     m_odometry = new SwerveDriveOdometry(Constants.kSwerve.KINEMATICS, getYaw(), getStates());
 
     SmartDashboard.putData("Field", m_dashboardField);
+
+    SmartDashboard.putBoolean("put k vals", false);
+    SmartDashboard.putNumber("drivekP", Constants.kSwerve.ANGLE_KP);
+    SmartDashboard.putNumber("drivekD", Constants.kSwerve.ANGLE_KD);
   }
 
   /** 
@@ -172,10 +177,22 @@ public class Swerve extends SubsystemBase {
       m_moduleRawVelocityEntries.get(i).append(module.getDriveRawVelocity());
       m_modulepercentPowerEntries.get(i).append(module.getDriveOutputPower());
       i++;
-    }
+      
+      SmartDashboard.putNumber(String.format("percentPower %d", module.moduleNumber), module.getDriveOutputPower());
+      SmartDashboard.putNumber(String.format("rawVelocity %d", module.moduleNumber), module.getDriveRawVelocity());
+      SmartDashboard.putNumber(String.format("driveError %d", module.moduleNumber), Math.abs(module.getDriveError()));
 
-    SmartDashboard.putNumber("percentPower", modules[0].getDriveOutputPower());
-    SmartDashboard.putNumber("rawVelocity", modules[0].getDriveRawVelocity());
+      SmartDashboard.putNumber(String.format("inchVelocity %d", module.moduleNumber), Units.metersToInches(module.getDriveVelocity()));
+      SmartDashboard.putNumber(String.format("inchError %d", module.moduleNumber), Units.metersToInches(Math.abs(module.getVeolcityError())));
+    }
+   
+    if (SmartDashboard.getBoolean("put k vals", false)) {
+    double kP = SmartDashboard.getNumber("drivekP", Constants.kSwerve.ANGLE_KP);
+    double kD = SmartDashboard.getNumber("drivekD", Constants.kSwerve.ANGLE_KD);
+      for (SwerveModule module : modules) {
+        module.setPID(kP, 0, kD);
+      }
+    } 
   }
   
 }

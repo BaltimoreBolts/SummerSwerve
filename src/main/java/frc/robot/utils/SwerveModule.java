@@ -20,6 +20,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.util.Units;
 import frc.robot.Constants;
 
 
@@ -41,6 +42,9 @@ public class SwerveModule {
   private Rotation2d m_startupOffset;
 
   private Rotation2d lastAngle;
+
+  private double lastGoalVelocity = 0;
+  private double lastVelocity = 0;
 
   public SwerveModule(int moduleNumber, SwerveModuleConstants constants) {
     this.moduleNumber = moduleNumber;
@@ -117,7 +121,19 @@ public class SwerveModule {
 
   public double getDriveRawVelocity() {
     return driveEncoder.getVelocity();
-  };
+  }
+
+  public double getDriveVelocity() {
+    return (driveEncoder.getVelocity() / Constants.kSwerve.DRIVE_GEAR_RATIO) * Constants.kSwerve.WHEEL_CIRCUMFERENCE / 60;
+  }
+
+  public double getDriveError() {
+    return (lastGoalVelocity - getDriveRawVelocity());
+  }
+
+  public double getVeolcityError() {
+    return (lastVelocity - getDriveVelocity());
+  }
 
   public double getDriveOutputPower() {
     return driveMotor.getAppliedOutput();
@@ -178,8 +194,16 @@ public class SwerveModule {
     drivePID.setReference(pctSpeed, CANSparkMax.ControlType.kDutyCycle);
   }
 
-  private void setDriveVelocity(double velocity) {
+  public void setDriveVelocity(double velocity) {
     drivePID.setReference(velocity, ControlType.kVelocity);
+    lastGoalVelocity = velocity;
+    lastVelocity = velocity / Constants.kSwerve.DRIVE_GEAR_RATIO * Units.metersToInches(Constants.kSwerve.WHEEL_CIRCUMFERENCE) / 60;
+  }
+
+  public void setPID(double kP, double kI, double kD){
+    drivePID.setP(kP);
+    drivePID.setI(kI);
+    drivePID.setD(kD);
   }
 
   public void stop() {
