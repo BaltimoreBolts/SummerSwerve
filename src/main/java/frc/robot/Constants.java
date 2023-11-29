@@ -86,7 +86,7 @@ public class Constants {
     
     /** Swerve constraints. */
     public static final double MAX_VELOCITY_METERS_PER_SECOND = 3.0;
-    public static final double MAX_ANGULAR_RADIANS_PER_SECOND = 4.0;
+    public static final double MAX_ANGULAR_RADIANS_PER_SECOND = 5.0;
 
     /** Inversions. */
     public static final boolean DRIVE_MOTOR_INVERSION = false;

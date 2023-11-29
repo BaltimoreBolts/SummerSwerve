@@ -5,6 +5,12 @@ import java.util.List;
 import java.util.function.DoubleSupplier;
 
 import com.kauailabs.navx.frc.AHRS;
+import com.pathplanner.lib.commands.FollowPathHolonomic;
+import com.pathplanner.lib.commands.FollowPathWithEvents;
+import com.pathplanner.lib.path.PathPlannerPath;
+import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
+import com.pathplanner.lib.util.PIDConstants;
+import com.pathplanner.lib.util.ReplanningConfig;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -59,7 +65,7 @@ public class Swerve extends SubsystemBase {
 
     zeroGyro();
 
-    m_odometry = new SwerveDriveOdometry(Constants.kSwerve.KINEMATICS, getYaw(), getStates());
+    m_odometry = new SwerveDriveOdometry(Constants.kSwerve.KINEMATICS, getYaw(), getModulePositionStates());
 
     SmartDashboard.putData("Field", m_dashboardField);
 
@@ -75,7 +81,7 @@ public class Swerve extends SubsystemBase {
    * 
    * Double suppliers are just any function that returns a double.
    */
-  public Command drive(DoubleSupplier forwardBackAxis, DoubleSupplier leftRightAxis, DoubleSupplier rotationAxis, boolean isFieldRelative) {
+  public Command drive(DoubleSupplier forwardBackAxis, DoubleSupplier leftRightAxis, DoubleSupplier rotationAxis, boolean isFieldRelative, boolean isOpenLoop) {
     return new RunCommand(() -> {
       // Grabbing input from suppliers.
       double forwardBack = forwardBackAxis.getAsDouble();
@@ -99,25 +105,24 @@ public class Swerve extends SubsystemBase {
 
       SwerveModuleState[] states = Constants.kSwerve.KINEMATICS.toSwerveModuleStates(chassisSpeeds);
 
-      setModuleStates(states);
+      setModuleStates(states, isOpenLoop);
     }, this).withName("SwerveDriveCommand");
   }
 
-  public Command driveTestVelocity(DoubleSupplier velocity) {
-    return new RunCommand(() -> {
-      ChassisSpeeds chassisSpeeds = new ChassisSpeeds(1.0, 0.0, 0.0);
+  public void driveRobotRelative(ChassisSpeeds speed) {
+    double forwardBack = speed.vxMetersPerSecond;
+    double leftRight = speed.vyMetersPerSecond;
+    double rotation = speed.omegaRadiansPerSecond;
 
-      SwerveModuleState[] states = Constants.kSwerve.KINEMATICS.toSwerveModuleStates(chassisSpeeds);
+    // Converting to m/s
+    forwardBack *= Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND; 
+    leftRight *= Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND;
+    rotation *= Constants.kSwerve.MAX_ANGULAR_RADIANS_PER_SECOND;
 
-      for (int i = 0; i < modules.length; i++) {
-        states[i].speedMetersPerSecond = velocity.getAsDouble();
-        modules[i].setStateTestVelocity(states[i]);
-      }
-    });
-  }
+    // Get desired module states.
+    ChassisSpeeds chassisSpeeds = new ChassisSpeeds(forwardBack, leftRight, rotation);
+    SwerveModuleState[] states = Constants.kSwerve.KINEMATICS.toSwerveModuleStates(chassisSpeeds);
 
-  /** To be used by auto. Use the drive method during teleop. */
-  public void setModuleStates(SwerveModuleState[] states) {
     setModuleStates(states, false);
   }
 
@@ -126,25 +131,33 @@ public class Swerve extends SubsystemBase {
     SwerveDriveKinematics.desaturateWheelSpeeds(states, Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND);
 
     for (int i = 0; i < modules.length; i++) {
-      modules[i].setState(states[modules[i].moduleNumber]);
+      modules[i].setState(states[modules[i].moduleNumber], isOpenLoop);
     }
   }
 
-  public SwerveModulePosition[] getStates() {
+  public SwerveModulePosition[] getModulePositionStates() {
     SwerveModulePosition currentStates[] = new SwerveModulePosition[modules.length];
     for (int i = 0; i < modules.length; i++) {
-      currentStates[i] = modules[i].getState();
+      currentStates[i] = modules[i].getModulePosition();
     }
-
     return currentStates;
   }
+
+  public SwerveModuleState[] getModuleStates() {
+    SwerveModuleState currentStates[] = new SwerveModuleState[modules.length];
+    for (int i = 0; i < modules.length; i++) {
+      currentStates[i] = modules[i].getModuleState();
+    }
+    return currentStates;
+  }
+
 
   public Rotation2d getYaw() {
     return Rotation2d.fromDegrees(-gyro.getYaw());
   }
 
   public void resetOdometry() {
-    m_odometry.resetPosition(getYaw(), getStates(), new Pose2d());
+    m_odometry.resetPosition(getYaw(), getModulePositionStates(), new Pose2d());
   }
 
   public Command zeroGyroCommand() {
@@ -155,10 +168,17 @@ public class Swerve extends SubsystemBase {
     gyro.zeroYaw();
   }
 
+  public Pose2d getPose() {
+    return m_odometry.getPoseMeters();
+  }
+
+  public ChassisSpeeds getRobotRelativeSpeeds() {
+    return Constants.kSwerve.KINEMATICS.toChassisSpeeds(getModuleStates());
+  }
 
   @Override
   public void periodic() {
-    m_odometry.update(getYaw(), getStates());
+    m_odometry.update(getYaw(), getModulePositionStates());
     m_dashboardField.setRobotPose(m_odometry.getPoseMeters());
     SmartDashboard.putNumber("x_val odom", m_odometry.getPoseMeters().getX());
     SmartDashboard.putNumber("y_val odom", m_odometry.getPoseMeters().getY());
@@ -195,4 +215,29 @@ public class Swerve extends SubsystemBase {
     } 
   }
   
+  public Command followPathCommand(String pathName){
+    PathPlannerPath path = PathPlannerPath.fromPathFile(pathName);
+
+    // You must wrap the path following command in a FollowPathWithEvents command in order for event markers to work
+    return new FollowPathWithEvents(
+        new FollowPathHolonomic(
+            path,
+            this::getPose, // Robot pose supplier
+            this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            this::driveRobotRelative, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+            new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your Constants class
+                new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
+                new PIDConstants(5.0, 0.0, 0.0), // Rotation PID constants
+                3.0, // Max module speed, in m/s
+                0.4, // Drive base radius in meters. Distance from robot center to furthest module.
+                new ReplanningConfig() // Default path replanning config. See the API for the options here
+            ),
+            this // Reference to this subsystem to set requirements
+        ),
+        path, // FollowPathWithEvents also requires the path
+        this::getPose // FollowPathWithEvents also requires the robot pose supplier
+    );
+}
+
+
 }
