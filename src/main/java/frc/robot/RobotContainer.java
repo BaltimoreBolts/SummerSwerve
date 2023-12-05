@@ -1,5 +1,8 @@
 package frc.robot;
 
+import com.pathplanner.lib.commands.PathPlannerAuto;
+
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
@@ -69,7 +72,7 @@ public class RobotContainer {
       true
     ));
 
-    driver.y().onTrue(new InstantCommand(() -> swerve.resetOdometry()));
+    driver.y().onTrue(new InstantCommand(() -> swerve.resetOdometry(new Pose2d())));
   }
 
     /**
@@ -78,7 +81,6 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // return auto.getSelectedCommand();
-    return new InstantCommand();
+    return new PathPlannerAuto("New Auto");
   }
 }
