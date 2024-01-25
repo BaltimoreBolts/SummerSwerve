@@ -20,6 +20,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.util.Units;
 import frc.robot.Constants;
 
 
@@ -42,6 +43,9 @@ public class SwerveModule {
 
   private Rotation2d lastAngle;
 
+  private double lastGoalVelocity = 0;
+  private double lastVelocity = 0;
+
   public SwerveModule(int moduleNumber, SwerveModuleConstants constants) {
     this.moduleNumber = moduleNumber;
     
@@ -61,11 +65,15 @@ public class SwerveModule {
     lastAngle = getSteerAngle();
   }
 
-  public void setState(SwerveModuleState state) {
+  public void setState(SwerveModuleState state, boolean isOpenLoop) {
     state = SwerveModuleState.optimize(state, getSteerAngle());
 
-    double speed = state.speedMetersPerSecond / Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND;
-    setDrivePower(speed);
+    if (isOpenLoop) {
+      double speed = state.speedMetersPerSecond / Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND;
+      setDrivePower(speed);
+    } else {
+      setDriveVelocity(state.speedMetersPerSecond);
+    }
 
     Rotation2d angle = Math.abs(state.speedMetersPerSecond) <= Constants.kSwerve.MAX_VELOCITY_METERS_PER_SECOND * 0.01
       ? lastAngle
@@ -74,13 +82,6 @@ public class SwerveModule {
     setSteerAngle(angle);
     lastAngle = angle;
   }
-
-// TODO - Implement
-//  public SwerveModuleState getState() {
-//    double velocity = driveEncoder.getVelocity();
-//    Rotation2d rot = new Rotation2d(angleEncoder.getPosition());
-//    return new SwerveModuleState(velocity, rot);
-//  }
 
   public Rotation2d getSteerAngle() {
     return Rotation2d.fromRotations(angleMotor.getEncoder().getPosition() * Constants.kSwerve.k_turnGearRatio).plus(m_startupOffset);
@@ -102,8 +103,32 @@ public class SwerveModule {
     return driveEncoder.getPosition() / Constants.kSwerve.DRIVE_GEAR_RATIO * Constants.kSwerve.WHEEL_CIRCUMFERENCE;
   }
 
-  public SwerveModulePosition getState() {
+  public double getDriveRawVelocity() {
+    return driveEncoder.getVelocity();
+  }
+
+  public double getDriveVelocity() {
+    return (driveEncoder.getVelocity() / Constants.kSwerve.DRIVE_GEAR_RATIO) * Constants.kSwerve.WHEEL_CIRCUMFERENCE / 60;
+  }
+
+  public double getDriveError() {
+    return (lastGoalVelocity - getDriveRawVelocity());
+  }
+
+  public double getVeolcityError() {
+    return (lastVelocity - getDriveVelocity());
+  }
+
+  public double getDriveOutputPower() {
+    return driveMotor.getAppliedOutput();
+  }
+
+  public SwerveModulePosition getModulePosition() {
     return new SwerveModulePosition(getDisance(), getSteerAngle());
+  }
+
+  public SwerveModuleState getModuleState() {
+    return new SwerveModuleState(getDriveVelocity(), getSteerAngle());
   }
 
   private void configureDevices() {
@@ -155,6 +180,22 @@ public class SwerveModule {
 
   private void setDrivePower(double pctSpeed){
     drivePID.setReference(pctSpeed, CANSparkMax.ControlType.kDutyCycle);
+  }
+
+  public void setDriveVelocity(double velocity) {
+    if (Math.abs(velocity) >= 0.01) {
+      drivePID.setReference(velocity / Constants.kSwerve.WHEEL_CIRCUMFERENCE * Constants.kSwerve.DRIVE_GEAR_RATIO * 60, ControlType.kVelocity);
+    } else {
+      driveMotor.stopMotor();
+    }
+    lastGoalVelocity = velocity;
+    lastVelocity = velocity / Constants.kSwerve.DRIVE_GEAR_RATIO * Units.metersToInches(Constants.kSwerve.WHEEL_CIRCUMFERENCE) / 60;
+  }
+
+  public void setPID(double kP, double kI, double kD){
+    drivePID.setP(kP);
+    drivePID.setI(kI);
+    drivePID.setD(kD);
   }
 
   public void stop() {
