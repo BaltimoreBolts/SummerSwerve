@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.subsystems.Swerve;
 import frc.robot.utils.SwerveModule;
 
-
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
@@ -24,17 +23,16 @@ import frc.robot.utils.SwerveModule;
 public class RobotContainer {
   public final CommandXboxController driver;
 
-  public final Swerve swerve;
+
+  // public final Swerve swerve;
 
   // public final AutoCommands auto;
+
 
   public RobotContainer() {
     driver = new CommandXboxController(Constants.kControls.DRIVE_JOYSTICK_ID);
 
-    swerve = new Swerve();
-
-    SmartDashboard.putNumber("drive/speed", 0.0);
-    SmartDashboard.putNumber("drive/velocity(RPM)", 0.0);
+    // swerve = new Swerve();
     // auto = new AutoCommands(swerve);
 
     // Configure button bindings
@@ -73,6 +71,7 @@ public class RobotContainer {
     ));
 
     driver.y().onTrue(new InstantCommand(() -> swerve.resetOdometry(new Pose2d())));
+
   }
 
     /**

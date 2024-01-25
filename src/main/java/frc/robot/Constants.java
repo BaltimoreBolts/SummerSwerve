@@ -89,6 +89,7 @@ public class Constants {
     public static final double MAX_ANGULAR_RADIANS_PER_SECOND = 5.0;
 
     /** Inversions. */
+
     public static final boolean DRIVE_MOTOR_INVERSION = false;
     public static final boolean ANGLE_MOTOR_INVERSION = true;
 
@@ -104,6 +105,7 @@ public class Constants {
 
     //mod 0 = back right
     public static final SwerveModuleConstants MOD_0_Constants = new SwerveModuleConstants(
+
       3,
       2,
       0,

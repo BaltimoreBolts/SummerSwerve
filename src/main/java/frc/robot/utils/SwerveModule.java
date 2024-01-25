@@ -10,10 +10,12 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.SparkMaxAbsoluteEncoder.Type;
 
 //import edu.wpi.first.wpilibj.AnalogPotentiometer; // FOR ANALOG ENCODER (Maybe)
 import edu.wpi.first.wpilibj.AnalogEncoder; // FOR ANALOG ENCODER
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -37,8 +39,8 @@ public class SwerveModule {
   private final SparkMaxPIDController anglePID;
   
   private final AnalogEncoder m_turningEncoder; // FOR ANALOG ENCODER
-  private final Rotation2d m_thriftyOffsetDegrees;
 
+  private final Rotation2d m_thriftyOffsetDegrees;
   private Rotation2d m_startupOffset;
 
   private Rotation2d lastAngle;
@@ -86,6 +88,7 @@ public class SwerveModule {
   public Rotation2d getSteerAngle() {
     return Rotation2d.fromRotations(angleMotor.getEncoder().getPosition() * Constants.kSwerve.k_turnGearRatio).plus(m_startupOffset);
   }
+
 
   public Rotation2d getSteerRawAngle() {
     return Rotation2d.fromRotations(angleMotor.getEncoder().getPosition()).times(Constants.kSwerve.k_turnGearRatio);
@@ -161,11 +164,13 @@ public class SwerveModule {
     anglePID.setFF(Constants.kSwerve.ANGLE_KF);
 
     anglePID.setPositionPIDWrappingEnabled(true);
+
     anglePID.setPositionPIDWrappingMaxInput(1.0 / Constants.kSwerve.k_turnGearRatio);
     anglePID.setPositionPIDWrappingMinInput(0.0);
 
     angleEncoder.setPositionConversionFactor(1.0);
     angleEncoder.setVelocityConversionFactor(1.0);
+
     configureEncoders();
   }
 
@@ -201,5 +206,19 @@ public class SwerveModule {
   public void stop() {
     angleMotor.set(0);
     driveMotor.set(0);
+
   }
+
+  public void setAngle(double angle_rad) {
+    double position = Units.radiansToRotations((angle_rad - m_startupOffset) / k_turnGearRatio);
+    SmartDashboard.putNumber("position given", position);
+    SmartDashboard.putNumber("position given 2", angle_rad);
+    anglePID.setReference(position, ControlType.kPosition);
+  }
+
+  public void stop() {
+    angleMotor.set(0);
+  }
+
+
 }
